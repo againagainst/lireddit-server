@@ -1,3 +1,4 @@
+import { EntityManager } from "@mikro-orm/postgresql";
 import argon2 from "argon2";
 import {
   Arg,
@@ -73,14 +74,29 @@ export class UserResolver {
       };
     }
     const hashedPassword = await argon2.hash(options.password);
-    const user = em.create(User, {
-      username: options.username,
-      password: hashedPassword,
-    });
+    // Can not use MikroORM because of the following errror:
+    // ValidationError: You cannot call em.flush() from inside lifecycle hook handlers
+    // const user = em.create(User, {username: options.username, password: hashedPassword});
+    // await em.persistAndFlush(user);
+    // So we use bare Knex query:
+    let user;
     try {
-      await em.persistAndFlush(user);
+      const result = await (em as EntityManager)
+        .createQueryBuilder(User)
+        .getKnexQuery()
+        .insert({
+          username: options.username,
+          password: hashedPassword,
+          created_at: new Date(),
+          updated_at: new Date(),
+        })
+        .returning("*");
+      user = result[0];
     } catch (error) {
-      if (error.name == "UniqueConstraintViolationException")
+      if (
+        error.name == "UniqueConstraintViolationException" ||
+        error.code == "23505"
+      )
         return {
           errors: [
             {
