@@ -7,7 +7,7 @@ import session from "express-session";
 import redis from "redis";
 import "reflect-metadata";
 import { buildSchema } from "type-graphql";
-import { APP, DEBUG } from "./constants";
+import { APP, COOKIE_NAME, DEBUG } from "./constants";
 import mikroConfig from "./mikro-orm.config";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
@@ -26,7 +26,7 @@ const main = async () => {
 
   app.use(
     session({
-      name: "qid",
+      name: COOKIE_NAME,
       store: new RedisStore({ client: redisClient, disableTouch: true }),
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 365,
