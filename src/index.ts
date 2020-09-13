@@ -1,4 +1,3 @@
-import { MikroORM } from "@mikro-orm/core";
 import { ApolloServer } from "apollo-server-express";
 import connectRedis from "connect-redis";
 import cors from "cors";
@@ -6,17 +5,18 @@ import express from "express";
 import session from "express-session";
 import Redis from "ioredis";
 import { duration } from "moment";
-import "reflect-metadata";
+import "reflect-metadata"; //
 import { buildSchema } from "type-graphql";
+import { createConnection } from "typeorm";
 import { APP, COOKIE_NAME, DEBUG } from "./constants";
-import mikroConfig from "./mikro-orm.config";
 import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
+import typeormConfig from "./typeorm.config";
 
 const main = async () => {
-  const orm = await MikroORM.init(mikroConfig);
-  orm.getMigrator().up();
+  // const conn =
+  await createConnection(typeormConfig);
 
   const app = express();
 
@@ -47,7 +47,6 @@ const main = async () => {
       validate: false,
     }),
     context: ({ req, res }) /*: MyContext */ => ({
-      em: orm.em,
       req,
       res,
       redis,
