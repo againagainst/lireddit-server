@@ -15,7 +15,6 @@ import { UserResolver } from "./resolvers/user";
 import typeormConfig from "./typeorm.config";
 
 const main = async () => {
-  // const conn =
   await createConnection(typeormConfig);
 
   const app = express();
