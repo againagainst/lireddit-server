@@ -50,17 +50,27 @@ export class PostResolver {
   ): Promise<PaginatedPosts> {
     const realLimit = Math.min(50, limit);
     const realLimitPlusOne = realLimit + 1;
-    const query = getConnection()
-      .getRepository(Post)
-      .createQueryBuilder("p")
-      .orderBy('"createdAt"', "DESC")
-      .take(realLimitPlusOne);
+
+    const replacements: any[] = [realLimitPlusOne];
     if (cursor) {
-      query.where('"createdAt" < :cursor', {
-        cursor: new Date(parseInt(cursor)),
-      });
+      replacements.push(new Date(parseInt(cursor)));
     }
-    const posts = await query.getMany();
+
+    const posts = await getConnection().query(
+      `select p.*, jsonb_build_object(
+        'id', u.id,
+        'username', u.username,
+        'email', u.email
+      ) creator
+      from post p 
+      join "user" u on p."creatorId" = u.id
+      ${cursor ? `where p."createdAt" < $2` : ""}
+      order by p."createdAt" desc
+      limit $1;
+      `,
+      replacements
+    );
+
     return {
       posts: posts.slice(0, realLimit),
       hasMore: posts.length === realLimitPlusOne,
