@@ -1,5 +1,6 @@
 import { ConnectionOptions } from "typeorm";
 import { Post } from "./entities/Post";
+import { Updoot } from "./entities/Updoot";
 import { User } from "./entities/User";
 
 export default {
@@ -9,5 +10,5 @@ export default {
   password: "***REMOVED***",
   logging: true,
   synchronize: true,
-  entities: [Post, User],
+  entities: [Post, User, Updoot],
 } as ConnectionOptions;

@@ -43,6 +43,32 @@ export class PostResolver {
     return root.text.slice(0, 100);
   }
 
+  @Mutation(() => Boolean)
+  @UseMiddleware(isAuth)
+  async vote(
+    @Arg("value", () => Int) value: number,
+    @Arg("postId", () => Int) postId: number,
+    @Ctx() { req }: MyContext
+  ) {
+    const userId = req.session.userId;
+    const isUpdoot = value !== -1;
+    const realValue = isUpdoot ? 1 : -1;
+    // TODO: Find a better way (pass parameters)
+    await getConnection().query(
+      `
+      start transaction;
+      insert into updoot (value, "userId", "postId")
+      values (${realValue}, ${userId}, ${postId});
+ 
+      update post
+      set points = points + ${realValue}
+      where id = ${postId};
+      commit;
+      `
+    );
+    return true;
+  }
+
   @Query(() => PaginatedPosts)
   async posts(
     @Arg("limit", () => Int) limit: number,
