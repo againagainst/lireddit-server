@@ -16,6 +16,7 @@ import { getConnection } from "typeorm";
 import { Post } from "../entities/Post";
 import { Updoot } from "../entities/Updoot";
 import { isAuth } from "../middleware/isAuth";
+import { defined } from "../shortcuts";
 import { MyContext } from "../types";
 
 @InputType()
@@ -89,14 +90,7 @@ export class PostResolver {
   ): Promise<PaginatedPosts> {
     const realLimit = Math.min(50, limit);
     const realLimitPlusOne = realLimit + 1;
-    const userId = req.session.userId;
-    const replacements: any[] = [realLimitPlusOne];
-    if (cursor) {
-      replacements.push(new Date(parseInt(cursor)));
-    }
-    if (userId) {
-      replacements.push(userId);
-    }
+    const { userId } = req.session;
 
     const posts = await getConnection().query(
       `select p.*, jsonb_build_object(
@@ -106,16 +100,20 @@ export class PostResolver {
       ) creator,
       ${
         userId
-          ? '(select value from updoot where "userId" = $2 and "postId" = p.id) "voteStatus"'
-          : 'null "voteStatus"'
-      }
+          ? '(select value from updoot where "userId" = $1 and "postId" = p.id)'
+          : "(select null where $1)"
+      } "voteStatus"
       from post p 
       join "user" u on p."creatorId" = u.id
-      ${cursor ? `where p."createdAt" < $3` : ""}
+      where ${cursor ? `p."createdAt" < $2` : "$2"}
       order by p."createdAt" desc
-      limit $1;
+      limit $3;
       `,
-      replacements
+      [
+        userId ? userId : true,
+        cursor ? new Date(parseInt(cursor)) : true,
+        realLimitPlusOne,
+      ]
     );
 
     return {
