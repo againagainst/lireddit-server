@@ -90,9 +90,12 @@ export class PostResolver {
     const realLimit = Math.min(50, limit);
     const realLimitPlusOne = realLimit + 1;
     const userId = req.session.userId;
-    const replacements: any[] = [realLimitPlusOne, userId];
+    const replacements: any[] = [realLimitPlusOne];
     if (cursor) {
       replacements.push(new Date(parseInt(cursor)));
+    }
+    if (userId) {
+      replacements.push(userId);
     }
 
     const posts = await getConnection().query(
@@ -100,11 +103,11 @@ export class PostResolver {
         'id', u.id,
         'username', u.username,
         'email', u.email
-      ) creator
+      ) creator,
       ${
         userId
-          ? ', (select value from updoot where "userId" = $2 and "postId" = p.id) "voteStatus"'
-          : 'null as "voteStatus"'
+          ? '(select value from updoot where "userId" = $2 and "postId" = p.id) "voteStatus"'
+          : 'null "voteStatus"'
       }
       from post p 
       join "user" u on p."creatorId" = u.id
