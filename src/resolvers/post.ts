@@ -15,6 +15,7 @@ import {
 import { getConnection } from "typeorm";
 import { Post } from "../entities/Post";
 import { Updoot } from "../entities/Updoot";
+import { User } from "../entities/User";
 import { isAuth } from "../middleware/isAuth";
 import { MyContext } from "../types";
 
@@ -39,8 +40,13 @@ class PaginatedPosts {
 @Resolver(Post)
 export class PostResolver {
   @FieldResolver(() => String)
-  textSnippet(@Root() root: Post) {
-    return root.text.slice(0, 100);
+  textSnippet(@Root() post: Post) {
+    return post.text.slice(0, 100);
+  }
+
+  @FieldResolver(() => User)
+  creator(@Root() post: Post, @Ctx() { userLoader }: MyContext) {
+    return userLoader.load(post.creatorId);
   }
 
   @Mutation(() => Boolean)
@@ -92,18 +98,13 @@ export class PostResolver {
     const { userId } = req.session;
 
     const posts = await getConnection().query(
-      `select p.*, jsonb_build_object(
-        'id', u.id,
-        'username', u.username,
-        'email', u.email
-      ) creator,
+      `select p.*,
       ${
         userId
           ? '(select value from updoot where "userId" = $1 and "postId" = p.id)'
           : "(select null where $1)"
       } "voteStatus"
       from post p 
-      join "user" u on p."creatorId" = u.id
       where ${cursor ? `p."createdAt" < $2` : "$2"}
       order by p."createdAt" desc
       limit $3;
@@ -123,7 +124,7 @@ export class PostResolver {
 
   @Query(() => Post, { nullable: true })
   post(@Arg("id", () => Int) id: number): Promise<Post | undefined> {
-    return Post.findOne(id, { relations: ["creator"] });
+    return Post.findOne(id);
   }
 
   @Mutation(() => Post)

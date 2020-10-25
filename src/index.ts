@@ -13,6 +13,7 @@ import { HelloResolver } from "./resolvers/hello";
 import { PostResolver } from "./resolvers/post";
 import { UserResolver } from "./resolvers/user";
 import typeormConfig from "./typeorm.config";
+import { createUserLoader } from "./utils/createUserLoader";
 
 const main = async () => {
   await createConnection(typeormConfig);
@@ -49,6 +50,7 @@ const main = async () => {
       req,
       res,
       redis,
+      userLoader: createUserLoader(),
     }),
   });
   apolloServer.applyMiddleware({
