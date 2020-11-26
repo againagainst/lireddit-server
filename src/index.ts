@@ -34,7 +34,7 @@ const main = async () => {
   const redis = new Redis(process.env.REDIS_URL);
 
   app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
-  app.set("proxy", 1);
+  app.set("trust proxy", 1);
   app.use(
     session({
       name: COOKIE_NAME,
